@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  proxy:
+    build: ./proxy
+    ports:
+      - 30080:3000
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    environment:
+      - FLASK_ENV=${FLASK_ENV}
+      - SECRET_KEY=${SECRET_KEY}
+      - ADMIN_ID=${ADMIN_ID}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    volumes: 
+      - ./backend/sample_app:/sample_app
+      - ./backend/script:/script
+    depends_on:
+      - selenium-server
+
+  selenium-server:
+    image: seleniarm/standalone-chromium
+    shm_size: "2gb"
+
