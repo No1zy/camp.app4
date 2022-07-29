@@ -1,4 +1,6 @@
-from flask import Flask, jsonify, flash, request, render_template, redirect
+import json.decoder
+
+from flask import Flask, Response, jsonify, flash, request, render_template, redirect
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -195,11 +197,23 @@ def logout():
 @app.route('/debug', methods=['GET', 'POST'])
 @csrf.exempt
 def debug():
+    callback = request.args.get('callback')
+
     headers = {}
     for header in request.headers:
         headers[header[0]] = header[1]
+
+    if callback:
+        return jsonp(callback, headers)
+
     return jsonify(body=request.form, headers=headers)
 
+
+def jsonp(callback, headers):
+    return Response(
+        f'{callback}({jsonify(body=request.form, headers=headers).data.decode()});',
+        mimetype="text/javascript"
+        )
 
 @login_manager.unauthorized_handler
 def unauthorized():
