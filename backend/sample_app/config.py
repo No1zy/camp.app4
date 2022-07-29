@@ -5,4 +5,4 @@ base_dir = os.path.dirname(__file__)
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(base_dir, "data.sqlite")
 SECRET_KEY = os.getenv("SECRET_KEY")
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-SEND_FILE_MAX_AGE_DEFAULT = 300
+SEND_FILE_MAX_AGE_DEFAULT = 10
