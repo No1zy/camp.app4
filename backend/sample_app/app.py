@@ -1,6 +1,8 @@
 import json.decoder
 
-from flask import Flask, Response, jsonify, flash, request, render_template, redirect
+import flask
+import werkzeug
+from flask import Flask, Response, jsonify, flash, request, render_template, redirect, sessions
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -16,9 +18,12 @@ import requests
 import const
 import os
 import re
+from mysessioninterface import MySessionInterface
+
 
 app = Flask(__name__, static_folder='static')
 app.config.from_object('config')
+app.session_interface = MySessionInterface()
 csrf = CSRFProtect(app)
 
 init_db(app)
@@ -56,6 +61,7 @@ def update_user(user_id):
 
     if request.method == "GET":
         user = User.query.filter_by(id=user_id).first()
+
         return render_template('users/edit.html', user=user)
 
     elif request.method == "POST":
@@ -80,6 +86,18 @@ def update_user(user_id):
 
         db.session.commit() 
         return redirect(f'/users/{user_id}')
+
+
+@app.route('/users/<int:user_id>/private_message', methods=['GET'])
+@login_required
+def get_private_message(user_id):
+    if current_user.id != user_id:
+        return Response(response="", status=200)
+
+    user = User.query.filter_by(id=current_user.id).first()
+    headers = {'Content-Type': 'text/plain'}
+
+    return Response(response=user.private_message, headers=headers, status=200)
 
 
 @app.route('/users/<int:user_id>/report', methods=['POST'])
@@ -177,14 +195,10 @@ def login():
             flash('Login failed...')
             return render_template('login.html')
     else:
-        redirect_url = request.args.get('redirect')
-        if not redirect_url:
-            redirect_url = '/'
-
         if current_user.is_authenticated:
-            return redirect(redirect_url)
+            return redirect('/')
 
-        return render_template('login.html', redirect_url=redirect_url)
+        return render_template('login.html')
 
 
 @app.route('/logout', methods=['GET'])
@@ -197,27 +211,16 @@ def logout():
 @app.route('/debug', methods=['GET', 'POST'])
 @csrf.exempt
 def debug():
-    callback = request.args.get('callback')
-
     headers = {}
     for header in request.headers:
         headers[header[0]] = header[1]
 
-    if callback:
-        return jsonp(callback, headers)
-
     return jsonify(body=request.form, headers=headers)
 
 
-def jsonp(callback, headers):
-    return Response(
-        f'{callback}({jsonify(body=request.form, headers=headers).data.decode()});',
-        mimetype="text/javascript"
-        )
-
 @login_manager.unauthorized_handler
 def unauthorized():
-    return redirect(f'/login?redirect={request.path}')
+    return redirect('/login')
 
 
 if __name__ == '__main__':
