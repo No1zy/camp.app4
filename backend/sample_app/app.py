@@ -88,12 +88,9 @@ def update_user(user_id):
         return redirect(f'/users/{user_id}')
 
 
-@app.route('/users/<int:user_id>/private_message', methods=['GET'])
+@app.route('/private_message', methods=['GET'])
 @login_required
-def get_private_message(user_id):
-    if current_user.id != user_id:
-        return Response(response="", status=200)
-
+def get_private_message():
     user = User.query.filter_by(id=current_user.id).first()
     headers = {'Content-Type': 'text/plain'}
 
